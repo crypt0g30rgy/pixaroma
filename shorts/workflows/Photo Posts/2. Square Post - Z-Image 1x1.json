@@ -1,0 +1,933 @@
+{
+  "id": "c5beec59-2b88-4f3f-ba35-7640a58a9ba6",
+  "revision": 0,
+  "last_node_id": 201,
+  "last_link_id": 240,
+  "nodes": [
+    {
+      "id": 190,
+      "type": "ConditioningZeroOut",
+      "pos": [
+        -76.21748617376097,
+        379.38171365449824
+      ],
+      "size": [
+        197.712890625,
+        26
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 219
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            220
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.76",
+        "Node name for S&R": "ConditioningZeroOut"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 191,
+      "type": "ModelSamplingAuraFlow",
+      "pos": [
+        -361.06907297130226,
+        188.63707236465498
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 231
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            225
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.76",
+        "Node name for S&R": "ModelSamplingAuraFlow"
+      },
+      "widgets_values": [
+        3
+      ]
+    },
+    {
+      "id": 164,
+      "type": "VAEDecode",
+      "pos": [
+        455.7269386124458,
+        280.34970420475
+      ],
+      "size": [
+        140,
+        46
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 187
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 233
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            201,
+            237
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 171,
+      "type": "SaveImage",
+      "pos": [
+        621.8720834002202,
+        283.02547473527426
+      ],
+      "size": [
+        615.0020278469565,
+        679.2872229947789
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 201
+        }
+      ],
+      "outputs": [],
+      "title": "Save Image Original",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.27",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "Shorts/photo-1x1"
+      ]
+    },
+    {
+      "id": 162,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        -340.32689906004725,
+        647.0619901743141
+      ],
+      "size": [
+        250.61128906920487,
+        106
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            186
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -510.6173893074787,
+        301.16852260814346
+      ],
+      "size": [
+        424.42708333333337,
+        293.02083333333337
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 232
+        },
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 235
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            219,
+            223
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.27",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "Portrait photo of a futuristic orange steampunk robot, red eyes, close up head and shoulders, robot looking directly at the camera, intense mechanical gaze, advanced yet decayed design, fusion of futuristic technology and old industrial machinery, rusty metal surfaces, worn paint, exposed cables, glowing inner components, lost world atmosphere, abandoned civilization feeling, dramatic studio lighting, strong contrast, solid black background, cinematic shadows, shallow depth of field, ultra detailed, realistic photography style, high resolution, dark and moody tone"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 163,
+      "type": "KSampler",
+      "pos": [
+        132.71229364851325,
+        277.13973206727906
+      ],
+      "size": [
+        296.2197989449314,
+        262
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 225
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 223
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 220
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 186
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            187
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.27",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        26518765161073,
+        "randomize",
+        5,
+        1,
+        "dpmpp_sde",
+        "beta",
+        1
+      ]
+    },
+    {
+      "id": 193,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        -1063.7233029657566,
+        282.69066060772724
+      ],
+      "size": [
+        524.1231330948342,
+        98
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            231
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            232
+          ]
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            233
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.76",
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "z-image\\z-image-turbo-fp8-aio.safetensors"
+      ]
+    },
+    {
+      "id": 145,
+      "type": "MarkdownNote",
+      "pos": [
+        -1063.25699295269,
+        434.7052394359722
+      ],
+      "size": [
+        524.5004432079588,
+        413.9779033187383
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "👑 Pixaroma - Note - START HERE",
+      "properties": {},
+      "widgets_values": [
+        "# MODELS AND NODES USED IN THIS WORKFLOW  \n\n---\n\n## 🟣 Load Checkpoint\n### Download **z-image-turbo-fp8-aio.safetensors** ~10GB from [HERE](https://huggingface.co/SeeSee21/Z-Image-Turbo-AIO/resolve/main/z-image-turbo-fp8-aio.safetensors?download=true)\n\n### Or \n\n### Download **z-image-turbo-bf16-aio.safetensors** ~20 GB from [HERE](https://huggingface.co/SeeSee21/Z-Image-Turbo-AIO/resolve/main/z-image-turbo-bf16-aio.safetensors?download=true)\n\n📁 **Place in:** `ComfyUI/models/checkpoints/z-image` \n\nCreate the `z-image` folder if it does not exist)\n \nMore info about the AIO models [HERE](https://huggingface.co/SeeSee21/Z-Image-Turbo-AIO)\n\n---\n\n## 🧩 Nodes Installed from Manager  \n\n- None\n\n---\n\n## 📚 Resources  \n🎥 **Tutorials:** [Pixaroma YouTube Channel](https://www.youtube.com/@pixaroma)  \n💬 **Community Discord:** [Join Here](https://discord.com/invite/gggpkVgBf3)\n"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 194,
+      "type": "MarkdownNote",
+      "pos": [
+        -620,
+        240
+      ],
+      "size": [
+        430,
+        300
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "# Photo post - 1:1 square (Z-Image Turbo)\n\n**Output:** 1024x1024 square.\n\n- Use for feed posts, thumbnails, and carousel covers.\n- Run **Social Media Sizes** to batch a folder into square, 4:5, and 9:16 outputs.\n- Apache 2.0.\n"
+      ],
+      "title": "Shorts - how to use"
+    },
+    {
+      "id": 195,
+      "type": "PixaromaText",
+      "pos": [
+        -510.6173893074787,
+        1102.312697730053
+      ],
+      "size": [
+        400,
+        260
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            234
+          ]
+        }
+      ],
+      "title": "Your idea (edit this)",
+      "properties": {
+        "cnr_id": "ComfyUI-Pixaroma",
+        "Node name for S&R": "PixaromaText"
+      },
+      "widgets_values": [
+        "Portrait photo of a futuristic orange steampunk robot, red eyes, close up head and shoulders, robot looking directly at the camera, intense mechanical gaze, advanced yet decayed design, fusion of futuristic technology and old industrial machinery, rusty metal surfaces, worn paint, exposed cables, glowing inner components, lost world atmosphere, abandoned civilization feeling, dramatic studio lighting, strong contrast, solid black background, cinematic shadows, shallow depth of field, ultra detailed, realistic photography style, high resolution, dark and moody tone",
+        ""
+      ]
+    },
+    {
+      "id": 196,
+      "type": "PixaromaAIPrompt",
+      "pos": [
+        -70.61738930747867,
+        1102.312697730053
+      ],
+      "size": [
+        420,
+        680
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "clip",
+          "name": "clip",
+          "shape": 7,
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "localized_name": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "video",
+          "name": "video",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "localized_name": "text",
+          "name": "text",
+          "shape": 7,
+          "type": "STRING",
+          "link": 234
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            235,
+            236
+          ]
+        }
+      ],
+      "title": "1. Prompt enhancer (Qwen3-VL 4B)",
+      "properties": {
+        "cnr_id": "ComfyUI-Pixaroma",
+        "Node name for S&R": "PixaromaAIPrompt",
+        "aiPromptState": {
+          "idea": "",
+          "formula": "You are an expert prompt writer for the Z-Image Turbo image model. Turn the idea below into one image prompt.\n\nKeep faith with the idea. Every subject, action, colour and spatial relationship in it must survive. Do not invent extra characters, animals or scenery: if the idea says a boat, do not give it broken oars and a torn sail.\n\nZ-Image rewards a long, complete description, so write considerably more than the idea gives you, filling in what a photographer or an illustrator would have had to decide anyway. Work through it in this order, as flowing sentences rather than a list: the shot and the subject; who or what they are and how they look; what they are wearing, or what they are made of; where they are; what the light is doing; the mood; the medium and its style; and last one camera or technique note.\n\nChoose ONE camera phrase and ONE lighting phrase, and let them do their work. Stacking several of each dilutes both.\n\nDescribe any person as an adult unless the idea says otherwise, and say plainly what they are wearing.\n\nIf the idea names a medium, such as photo, painting, sketch or 3D render, keep exactly that medium, and say what style it is in as well: a photoreal product shot and a Pixar character are both 3D renders. If the idea names no medium, write it as a photograph.\n\nIf the idea asks for words to appear in the picture, on a sign, a label or a shirt, write those exact words wrapped in double quotes, like a sign reading \"OPEN\", and say where they sit and how large they are. That is the only use of double quotes.\n\nDescribe what the light is doing and what the surfaces are made of, using words that suit THIS idea. Do not give the lighting a proper name, and avoid words like beautiful, premium, masterpiece or 8k.\n\nWrite ONE flowing paragraph of plain English in ordinary sentences, between 110 and 180 words. Do not end with a list of keywords, and do not write labels such as Composition: or Style:. No title, no preamble, no explanation, no closing remark.\n\nIDEA:",
+          "model": "qwen3vl_4b_fp8_scaled.safetensors",
+          "clip_type": "minimax",
+          "order": "idea",
+          "sep": "newline",
+          "seed": 42,
+          "temperature": 0.3,
+          "max_length": 1500,
+          "top_k": 64,
+          "top_p": 0.95,
+          "min_p": 0.05,
+          "repetition_penalty": 1.05,
+          "presence_penalty": 0,
+          "do_sample": true,
+          "thinking": false,
+          "use_default_template": true,
+          "release_model": true,
+          "system_formula": false,
+          "seed_mode": "fixed",
+          "idea_share": 0.4
+        }
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 197,
+      "type": "PixaromaAIPrompt",
+      "pos": [
+        389.3826106925213,
+        1102.312697730053
+      ],
+      "size": [
+        420,
+        680
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "clip",
+          "name": "clip",
+          "shape": 7,
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "localized_name": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 237
+        },
+        {
+          "localized_name": "video",
+          "name": "video",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "localized_name": "text",
+          "name": "text",
+          "shape": 7,
+          "type": "STRING",
+          "link": 236
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            238,
+            239
+          ]
+        }
+      ],
+      "title": "2. Post writer (Qwen3-VL 4B)",
+      "properties": {
+        "cnr_id": "ComfyUI-Pixaroma",
+        "Node name for S&R": "PixaromaAIPrompt",
+        "aiPromptState": {
+          "idea": "Platform: Instagram feed, Facebook. Format: square 1:1 photo post. Tone: warm, natural, confident.\n\nVisual prompt:",
+          "formula": "You write the social-media post that goes with this picture or video. You may be looking at the finished media; use it to describe what is actually there.\n\nWrite exactly three parts, in this order, with no other text:\n\nCAPTION:\nOne or two sentences, under 220 characters, in a warm human voice. Say what is happening and why it is worth a look. No hashtags, no emoji, no \"link in bio\". Do not start with \"Check out\" or \"Introducing\".\n\nHASHTAGS:\nSix to ten lowercase hashtags on one line, separated by spaces. Mix broad and specific tags. No #follow, #like, #viral, #fyp, or hashtags with more than two words.\n\nALT TEXT:\nOne factual sentence under 180 characters describing the media for someone who cannot see it. Say the subject, the action, the setting and the style. Do not start with \"Image of\" or \"Video of\". Do not repeat the caption.\n\nIf the media is a still picture, write for a photo post. If it is a video, write for a short video. Match the brief below.\n\nBRIEF:",
+          "model": "qwen3vl_4b_fp8_scaled.safetensors",
+          "clip_type": "minimax",
+          "order": "idea",
+          "sep": "newline",
+          "seed": 42,
+          "temperature": 0.7,
+          "max_length": 600,
+          "top_k": 64,
+          "top_p": 0.95,
+          "min_p": 0.05,
+          "repetition_penalty": 1.05,
+          "presence_penalty": 0,
+          "do_sample": true,
+          "thinking": false,
+          "use_default_template": true,
+          "release_model": true,
+          "system_formula": false,
+          "seed_mode": "fixed",
+          "idea_share": 0.4
+        }
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 198,
+      "type": "PixaromaSaveText",
+      "pos": [
+        849.3826106925213,
+        1102.312697730053
+      ],
+      "size": [
+        420,
+        360
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "shape": 7,
+          "type": "STRING",
+          "link": 239
+        },
+        {
+          "localized_name": "name",
+          "name": "name",
+          "shape": 7,
+          "type": "STRING",
+          "link": 240
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "3. Save post copy",
+      "properties": {
+        "cnr_id": "ComfyUI-Pixaroma",
+        "Node name for S&R": "PixaromaSaveText",
+        "saveTextState": "{\"version\":1,\"folder\":\"Shorts\",\"pattern\":\"photo-1x1-post\",\"counterDigits\":2,\"autoSave\":false,\"separator\":\"blank\",\"newest\":\"bottom\",\"skipDupes\":\"off\",\"timestamp\":\"off\",\"maxEntries\":500,\"currentFile\":\"\",\"folded\":false,\"eachFile\":true}"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 199,
+      "type": "PixaromaShowText",
+      "pos": [
+        849.3826106925213,
+        1502.312697730053
+      ],
+      "size": [
+        480,
+        470
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "source",
+          "name": "source",
+          "type": "*",
+          "link": 238
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "Post copy preview",
+      "properties": {
+        "cnr_id": "ComfyUI-Pixaroma",
+        "Node name for S&R": "PixaromaShowText"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 200,
+      "type": "PixaromaText",
+      "pos": [
+        389.3826106925213,
+        1822.312697730053
+      ],
+      "size": [
+        360,
+        120
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            240
+          ]
+        }
+      ],
+      "title": "Post file name",
+      "properties": {
+        "cnr_id": "ComfyUI-Pixaroma",
+        "Node name for S&R": "PixaromaText"
+      },
+      "widgets_values": [
+        "photo-1x1-post",
+        ""
+      ]
+    },
+    {
+      "id": 201,
+      "type": "MarkdownNote",
+      "pos": [
+        -510.6173893074787,
+        1402.312697730053
+      ],
+      "size": [
+        400,
+        430
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Quality helpers - how they work",
+      "properties": {},
+      "widgets_values": [
+        "# Quality helpers (optional)\n\nThese nodes add two local passes with **Qwen3-VL 4B**: `qwen3vl_4b_fp8_scaled.safetensors` (5.24 GB, Apache 2.0). It is part of the shorts catalog and lives in `models/text_encoders`. Install it with `setup --short --install`.\n\n**1. Your idea -> Prompt enhancer -> prompt encoder.** Edit the idea in **Your idea**. The enhancer rewrites it for this workflow's model, using the source picture when one is connected, and feeds the positive prompt encoder. To use your idea unchanged, select the enhancer and press **Ctrl+B** (bypass); the idea passes straight through to the encoder.\n\n**2. Generated media -> Post writer.** After the final frames are decoded, the post writer looks at them and writes a caption, hashtags, and alt text. The result appears in **Post copy preview** and is saved to `output/Shorts/photo-1x1-post.txt` while the workflow is open in the browser. A headless API run does not write the file. Running again replaces the file.\n\nThe post writer reads the saved square image.\n\nBoth nodes load the model when they run and free it afterwards (**Free VRAM** is on). Expect a few extra seconds on the first run and after each pass. If VRAM is tight, bypass the post writer and use `shorts-post.sh` for copy instead.\n\nNeeds the **ComfyUI-Pixaroma** custom node pack (Manager -> Install Missing Custom Nodes).\n"
+      ]
+    }
+  ],
+  "links": [
+    [
+      186,
+      162,
+      0,
+      163,
+      3,
+      "LATENT"
+    ],
+    [
+      187,
+      163,
+      0,
+      164,
+      0,
+      "LATENT"
+    ],
+    [
+      201,
+      164,
+      0,
+      171,
+      0,
+      "IMAGE"
+    ],
+    [
+      219,
+      6,
+      0,
+      190,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      220,
+      190,
+      0,
+      163,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      223,
+      6,
+      0,
+      163,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      225,
+      191,
+      0,
+      163,
+      0,
+      "MODEL"
+    ],
+    [
+      231,
+      193,
+      0,
+      191,
+      0,
+      "MODEL"
+    ],
+    [
+      232,
+      193,
+      1,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      233,
+      193,
+      2,
+      164,
+      1,
+      "VAE"
+    ],
+    [
+      234,
+      195,
+      0,
+      196,
+      4,
+      "STRING"
+    ],
+    [
+      235,
+      196,
+      0,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      236,
+      196,
+      0,
+      197,
+      4,
+      "STRING"
+    ],
+    [
+      237,
+      164,
+      0,
+      197,
+      1,
+      "IMAGE"
+    ],
+    [
+      238,
+      197,
+      0,
+      199,
+      0,
+      "STRING"
+    ],
+    [
+      239,
+      197,
+      0,
+      198,
+      0,
+      "STRING"
+    ],
+    [
+      240,
+      200,
+      0,
+      198,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.0152559799477119,
+      "offset": [
+        1180.902940036374,
+        20.861479473920664
+      ]
+    },
+    "frontendVersion": "1.33.10",
+    "node_versions": {
+      "ComfyUI-GGUF": "8098c7149fa4ff14991eb3347a5585051ceeafbe",
+      "comfy-core": "v0.3.10-37-gd055325",
+      "rgthree-comfy": "5d771b8b56a343c24a26e8cea1f0c87c3d58102f"
+    },
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "workflowRendererVersion": "LG"
+  },
+  "version": 0.4
+}

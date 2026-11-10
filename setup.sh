@@ -10,6 +10,8 @@
 #   ./setup.sh models --episode 6 [options]
 #   ./setup.sh all --episode 6 [options]
 #   ./setup.sh list [--episode 6]
+#   ./setup.sh shorts --type short --install [options]
+#   ./setup.sh --short --install [options]
 #
 # Run ./setup.sh --help for the full option list.
 
@@ -17,6 +19,8 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 MANIFEST="$SCRIPT_DIR/models.psv"
+SHORTS_MANIFEST="$SCRIPT_DIR/shorts.psv"
+SHORTS_WF="$SCRIPT_DIR/shorts/workflows"
 
 TARGET=""
 EP_SELECTOR=""
@@ -30,10 +34,33 @@ VERIFY=0
 FORCE_MODELS=0
 FORCE_WORKFLOWS=0
 ALL_ZIP=0
+INSTALL=0
+LIST_ONLY=0
+SHORTS=0
+SHORTS_LIST=0
+SHORTS_TYPE="short"
+TYPE_SET=0
+WITH_H3=0
+ACCEPT_H3=0
 
 die() {
     printf 'error: %s\n' "$*" >&2
     exit 2
+}
+
+h3_license_notice() {
+    cat >&2 <<'EOF'
+MiniMax H3 / FastH3 Community License (summary, not legal advice):
+  - Use is excluded in the United States, the European Union, the United
+    Kingdom, and South Korea.
+  - Companies with more than $20M annual revenue need written permission.
+  - Commercial products must display "MiniMax H3".
+  - Outputs may not be used to train or improve other AI models.
+  - Public content must be disclosed as AI-generated.
+  Full terms: https://huggingface.co/Comfy-Org/MiniMax-H3
+The permissively licensed core (Wan 2.2, SCAIL-2, Z-Image, SeedVR2) does not
+require this gate.
+EOF
 }
 
 usage() {
@@ -45,10 +72,28 @@ Targets:
   models           Download models used by the selected episodes
   all              Workflows + models
   list             Print the model catalog (no writes)
+  shorts           Portrait social media models. Add --install for the shorts
+                   workflow pack. No episode selection; use --type instead.
 
 Selection:
   --episode N      Episode number, e.g. 6, 06, Ep06. Repeatable or comma-separated.
   --all            All episodes. Required for `models` when --episode is omitted.
+
+Shorts:
+  --short, --shorts  Shorthand for the `shorts` target.
+  --install        Also copy shorts/workflows/ into
+                   <ComfyUI>/user/default/workflows/Pixaroma/Shorts/.
+  --type TYPE      short (default), photo, story, or all.
+                   short: portrait video models + upscaler + talking head.
+                   photo: Z-Image only, for square/4:5 photo posts.
+                   story: Z-Image only, for 9:16 stories and covers.
+                   all: every permissively licensed shorts model.
+  --with-h3        Add the optional FastH3 models (about 44 GB). Requires
+                   --accept-h3-license.
+  --accept-h3-license
+                   Confirm that you have read the MiniMax H3 Community License.
+                   Use is excluded in the USA, EU, UK, and South Korea.
+  --list           With --short/--shorts, print the shorts catalog and exit.
 
 Paths:
   --comfyui PATH   ComfyUI root (the folder containing models/ and user/).
@@ -61,7 +106,7 @@ Paths:
 
 Safety:
   --dry-run        Show what would be downloaded/extracted; write nothing.
-  --yes            Skip the confirmation prompt for a full `models` install.
+  --yes            Skip the confirmation prompt for a full `models` or `shorts` install.
   --verify         Check installed model sizes; download nothing. Exit 1 on problems.
   --force-models   Re-download models even if the target file exists.
   --force-workflows  Overwrite workflow files instead of keeping existing ones.
@@ -73,9 +118,14 @@ Examples:
   ./setup.sh all --episode 25 --comfyui ~/ComfyUI
   ./setup.sh models --all --yes --comfyui ~/ComfyUI
   ./setup.sh list --episode 39
+  ./setup.sh shorts --list
+  ./setup.sh shorts --type photo --install --yes --comfyui ~/ComfyUI
+  ./setup.sh --short --install --comfyui ~/ComfyUI
+  ./setup.sh shorts --type all --with-h3 --accept-h3-license --dry-run
 
 Model files go to <ComfyUI>/models/<folder>/<file> exactly as the workflows expect.
 Workflows go to <ComfyUI>/user/default/workflows/Pixaroma/.
+Shorts workflows go to <ComfyUI>/user/default/workflows/Pixaroma/Shorts/.
 Requires the `hf` CLI: pip install -U "huggingface_hub[cli]".
 EOF
 }
@@ -102,8 +152,39 @@ add_episodes() {
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        workflows|models|all|list)
+        workflows|models|all|list|shorts)
             TARGET=$1
+            shift
+            ;;
+        --short|--shorts)
+            SHORTS=1
+            shift
+            ;;
+        --install)
+            INSTALL=1
+            shift
+            ;;
+        --type)
+            [ $# -ge 2 ] || die "--type needs a value"
+            SHORTS_TYPE=$2
+            TYPE_SET=1
+            shift 2
+            ;;
+        --type=*)
+            SHORTS_TYPE=${1#*=}
+            TYPE_SET=1
+            shift
+            ;;
+        --with-h3)
+            WITH_H3=1
+            shift
+            ;;
+        --accept-h3-license)
+            ACCEPT_H3=1
+            shift
+            ;;
+        --list)
+            LIST_ONLY=1
             shift
             ;;
         --episode)
@@ -171,20 +252,66 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# Resolve the shorts profile first. --short may appear before or after the target.
+if [ "$TARGET" = "shorts" ]; then
+    SHORTS=1
+fi
+if [ "$SHORTS" = 1 ] && [ -z "$TARGET" ]; then
+    TARGET=shorts
+fi
+if [ "$LIST_ONLY" = 1 ]; then
+    case "$TARGET" in
+        "") TARGET=list ;;
+        shorts) TARGET=list; SHORTS_LIST=1 ;;
+        list) [ "$SHORTS" = 1 ] && SHORTS_LIST=1 ;;
+        *) die "--list cannot be combined with target $TARGET" ;;
+    esac
+fi
 [ -n "$TARGET" ] || { usage; exit 2; }
-[ -f "$MANIFEST" ] || die "models.psv not found next to this script"
 
-if [ -n "$EP_SELECTOR" ] && [ "$ALL" = 1 ]; then
-    die "use --episode or --all, not both"
+if [ "$SHORTS" = 1 ] && [ "$TARGET" != "shorts" ] && [ "$TARGET" != "list" ]; then
+    die "--short is for the shorts profile; it cannot be combined with target $TARGET"
 fi
-if [ -n "$EP_SELECTOR" ] && [ "$ALL_ZIP" = 1 ]; then
-    die "--all-zip extracts the aggregate pack; it cannot be filtered by episode"
+if [ "$TARGET" = "list" ] && [ "$SHORTS" = 1 ]; then
+    SHORTS_LIST=1
 fi
-if [ "$TARGET" = "models" ] && [ -z "$EP_SELECTOR" ] && [ "$ALL" != 1 ]; then
-    die "models needs --episode N (repeatable) or --all"
+if [ "$TARGET" = "shorts" ] || [ "$SHORTS_LIST" = 1 ]; then
+    MANIFEST="$SHORTS_MANIFEST"
 fi
-if [ "$TARGET" = "all" ] && [ -z "$EP_SELECTOR" ] && [ "$ALL" != 1 ]; then
-    die "all needs --episode N (repeatable) or --all"
+[ -f "$MANIFEST" ] || die "$(basename -- "$MANIFEST") not found next to this script"
+
+if [ "$TARGET" = "shorts" ] || [ "$SHORTS_LIST" = 1 ]; then
+    case "$SHORTS_TYPE" in
+        short|photo|story|all) ;;
+        *) die "invalid --type: $SHORTS_TYPE (use short, photo, story, or all)" ;;
+    esac
+    [ -z "$EP_SELECTOR" ] || die "--episode is for episode packs; use --type with shorts"
+    [ "$ALL" != 1 ] || die "--all is for episode packs; use --type all with shorts"
+    [ "$ALL_ZIP" != 1 ] || die "--all-zip is for the episode workflow packs"
+    [ "$VERIFY" != 1 ] || [ "$INSTALL" != 1 ] || die "--verify cannot be combined with --install"
+    if [ "$WITH_H3" = 1 ]; then
+        h3_license_notice
+        [ "$ACCEPT_H3" = 1 ] || die "--with-h3 requires --accept-h3-license"
+    elif [ "$ACCEPT_H3" = 1 ]; then
+        die "--accept-h3-license requires --with-h3"
+    fi
+else
+    [ "$INSTALL" != 1 ] || die "--install is only valid with the shorts profile"
+    [ "$TYPE_SET" != 1 ] || die "--type is only valid with the shorts profile"
+    [ "$WITH_H3" != 1 ] || die "--with-h3 is only valid with the shorts profile"
+    [ "$ACCEPT_H3" != 1 ] || die "--accept-h3-license is only valid with --with-h3"
+    if [ -n "$EP_SELECTOR" ] && [ "$ALL" = 1 ]; then
+        die "use --episode or --all, not both"
+    fi
+    if [ -n "$EP_SELECTOR" ] && [ "$ALL_ZIP" = 1 ]; then
+        die "--all-zip extracts the aggregate pack; it cannot be filtered by episode"
+    fi
+    if [ "$TARGET" = "models" ] && [ -z "$EP_SELECTOR" ] && [ "$ALL" != 1 ]; then
+        die "models needs --episode N (repeatable) or --all"
+    fi
+    if [ "$TARGET" = "all" ] && [ -z "$EP_SELECTOR" ] && [ "$ALL" != 1 ]; then
+        die "all needs --episode N (repeatable) or --all"
+    fi
 fi
 if [ "$VERIFY" = 1 ] && [ "$FORCE_MODELS" = 1 ]; then
     die "--verify cannot be combined with --force-models"
@@ -211,7 +338,26 @@ human() {
     }'
 }
 
+shorts_row_selected() {
+    types=$1
+    case ",$types," in
+        *,h3,*)
+            [ "$WITH_H3" = 1 ] || return 1
+            return 0
+            ;;
+    esac
+    [ "$SHORTS_TYPE" = "all" ] && return 0
+    case ",$types," in
+        *",$SHORTS_TYPE,"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 row_selected() {
+    if [ "$TARGET" = "shorts" ] || [ "$SHORTS_LIST" = 1 ]; then
+        shorts_row_selected "$1"
+        return $?
+    fi
     eps=$1
     [ "$ALL" = 1 ] && return 0
     [ -n "$EP_SELECTOR" ] || return 1
@@ -266,7 +412,8 @@ else
     try_comfy "$HOME/ComfyUI_windows_portable/ComfyUI"
 fi
 
-if { [ "$TARGET" = "workflows" ] || [ "$TARGET" = "all" ]; } && [ -z "$COMFY" ]; then
+if { [ "$TARGET" = "workflows" ] || [ "$TARGET" = "all" ] || \
+     { [ "$TARGET" = "shorts" ] && [ "$INSTALL" = 1 ]; }; } && [ -z "$COMFY" ]; then
     die "ComfyUI not found. Pass --comfyui /path/to/ComfyUI"
 fi
 
@@ -278,8 +425,8 @@ else
     MODELS_DIR=""
 fi
 
-if [ "$TARGET" = "models" ] && [ -z "$MODELS_DIR" ]; then
-    die "models needs --models-root /path/to/models (or a ComfyUI install)"
+if { [ "$TARGET" = "models" ] || [ "$TARGET" = "shorts" ]; } && [ -z "$MODELS_DIR" ]; then
+    die "$TARGET needs --models-root /path/to/models (or a ComfyUI install)"
 fi
 
 WF_ROOT="${COMFY:+$COMFY/user/default/workflows/Pixaroma}"
@@ -289,6 +436,30 @@ ARCHIVES="$SCRIPT_DIR/archives"
 [ -d "$ARCHIVES" ] || ARCHIVES="$SCRIPT_DIR"
 
 # --------------------------------------------------------------------- listing
+if [ "$SHORTS_LIST" = 1 ]; then
+    printf '%10s  %-66s %-16s %s\n' "SIZE" "FOLDER/FILE" "TYPES" "SOURCE"
+    total=0
+    count=0
+    h3_count=0
+    while IFS='|' read -r folder filename bytes repo repo_path types url gated note; do
+        [ "$folder" = "folder" ] && continue
+        row_selected "$types" || continue
+        count=$((count + 1))
+        size=$(human "$bytes")
+        total=$((total + bytes))
+        case ",$types," in *,h3,*) h3_count=$((h3_count + 1)) ;; esac
+        printf '%10s  %-66s %-16s %s\n' "$size" "$folder/$filename" "$types" "$repo"
+    done < "$MANIFEST"
+    printf '\n%d files selected, %s.' "$count" "$(human "$total")"
+    if [ "$h3_count" -gt 0 ]; then
+        printf ' %d are optional H3 files under the MiniMax H3 Community License.' "$h3_count"
+    else
+        printf ' FastH3 is optional; add --with-h3 --accept-h3-license to include it.'
+    fi
+    printf '\n'
+    exit 0
+fi
+
 if [ "$TARGET" = "list" ] && [ -z "$EP_SELECTOR" ]; then
     ALL=1
 fi
@@ -379,8 +550,80 @@ install_workflows() {
     fi
 }
 
+shorts_workflow_selected() {
+    rel=$1
+    case "$rel" in
+        "H3 (license-restricted)/"*)
+            [ "$WITH_H3" = 1 ]
+            ;;
+        "Short Video/"*)
+            case "$SHORTS_TYPE" in short|all) return 0 ;; *) return 1 ;; esac
+            ;;
+        "Stories/"*)
+            case "$SHORTS_TYPE" in story|all) return 0 ;; *) return 1 ;; esac
+            ;;
+        "Photo Posts/3."*)
+            # 9:16 Z-Image cover/first frame is useful to every shorts type.
+            return 0
+            ;;
+        "Photo Posts/4."*)
+            # Social Media Sizes uses no models and is useful everywhere.
+            return 0
+            ;;
+        "Photo Posts/5."*)
+            case "$SHORTS_TYPE" in photo|all) return 0 ;; *) return 1 ;; esac
+            ;;
+        "Photo Posts/"*)
+            case "$SHORTS_TYPE" in photo|all) return 0 ;; *) return 1 ;; esac
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+install_shorts_workflows() {
+    printf '\n== Shorts workflows ==\n'
+    [ -d "$SHORTS_WF" ] || die "shorts/workflows not found next to this script"
+    dest="$WF_ROOT/Shorts"
+    if [ "$DRY" = 1 ]; then
+        printf '[dry-run] would copy the shorts workflow pack into %s\n' "$dest"
+        find "$SHORTS_WF" -type f | sort | while IFS= read -r file; do
+            rel=${file#"$SHORTS_WF"/}
+            shorts_workflow_selected "$rel" || continue
+            printf '[dry-run] %s\n' "$rel"
+        done
+        return 0
+    fi
+    mkdir -p "$dest"
+    list=$(mktemp "${TMPDIR:-/tmp}/pixaroma-shorts.XXXXXX") || die "mktemp failed"
+    find "$SHORTS_WF" -type f | sort > "$list"
+    copied=0
+    kept=0
+    while IFS= read -r file; do
+        rel=${file#"$SHORTS_WF"/}
+        shorts_workflow_selected "$rel" || continue
+        out="$dest/$rel"
+        if [ -f "$out" ] && [ "$FORCE_WORKFLOWS" != 1 ]; then
+            kept=$((kept + 1))
+            continue
+        fi
+        mkdir -p "$(dirname -- "$out")"
+        cp -f "$file" "$out"
+        copied=$((copied + 1))
+    done < "$list"
+    rm -f "$list"
+    total=$(find "$dest" -type f 2>/dev/null | wc -l | tr -d ' ')
+    printf '[wf] %d copied, %d kept; %s files in %s\n' "$copied" "$kept" "$total" "$dest"
+    [ "$kept" -eq 0 ] || [ "$FORCE_WORKFLOWS" = 1 ] || printf '[wf] existing workflow files were kept (use --force-workflows to overwrite)\n'
+}
+
 if [ "$TARGET" = "workflows" ] || [ "$TARGET" = "all" ]; then
     install_workflows
+fi
+
+if [ "$TARGET" = "shorts" ] && [ "$INSTALL" = 1 ]; then
+    install_shorts_workflows
 fi
 
 if [ "$TARGET" = "workflows" ]; then
@@ -443,7 +686,11 @@ if [ "$selected_files" -eq 0 ]; then
     exit 0
 fi
 
-printf '\n== Models ==\n'
+if [ "$TARGET" = "shorts" ]; then
+    printf '\n== Shorts models (%s) ==\n' "$SHORTS_TYPE"
+else
+    printf '\n== Models ==\n'
+fi
 printf 'Folder:      %s\n' "$MODELS_DIR"
 printf 'Selected:    %d files, %s downloadable' "$selected_files" "$(human "$selected_bytes")"
 [ "$manual_count" -gt 0 ] && printf ', %d manual' "$manual_count"
@@ -451,7 +698,8 @@ printf '\n'
 printf 'Present:     %d files (%s)\n' "$present_files" "$(human "$present_bytes")"
 printf 'To download: %d files (%s)\n' "$to_fetch_files" "$(human "$to_fetch_bytes")"
 [ "$mismatch_files" -gt 0 ] && printf 'Size issues: %d existing file(s) (see warnings above)\n' "$mismatch_files"
-[ "$gated_count" -gt 0 ] && printf 'Gated:       %d file(s) from black-forest-labs/flux-3-image-klein-comfy\n' "$gated_count"
+[ "$gated_count" -gt 0 ] && printf 'Gated:       %d file(s) require license acceptance + hf auth login\n' "$gated_count"
+[ "$WITH_H3" = 1 ] && printf 'H3:          included under the MiniMax H3 Community License\n'
 
 if [ "$VERIFY" = 1 ]; then
     printf '\nVerification only; nothing downloaded.\n'
@@ -459,7 +707,7 @@ if [ "$VERIFY" = 1 ]; then
     exit 1
 fi
 
-if [ "$ALL" = 1 ] && [ "$DRY" != 1 ] && [ "$YES" != 1 ] && [ "$to_fetch_files" -gt 0 ]; then
+if { [ "$ALL" = 1 ] || [ "$TARGET" = "shorts" ]; } && [ "$DRY" != 1 ] && [ "$YES" != 1 ] && [ "$to_fetch_files" -gt 0 ]; then
     printf '\nThis will download %s. Continue? [y/N] ' "$(human "$to_fetch_bytes")"
     if [ ! -t 0 ]; then
         printf '\nNot a terminal. Re-run with --yes to confirm.\n'

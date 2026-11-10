@@ -2,6 +2,8 @@
 
 Every model file referenced by the 40 Pixaroma workflow packs, resolved to a Hugging Face source and an exact size. The list is generated from the workflow JSON itself, not from filenames guessed off the notes.
 
+> The optional shorts profile is cataloged separately in `shorts.psv` (18 core files / 108.67 GB, plus 4 FastH3 files / 43.63 GB). See [`SHORTS.md`](SHORTS.md); this document covers only the 40 episode packs. The shorts helper model `qwen3vl_4b_fp8_scaled.safetensors` is already part of this episode catalog (Ep24–26).
+
 ## Summary
 
 - **133 model files** are referenced by **353 workflows** across **40 episode packs**.

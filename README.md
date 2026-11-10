@@ -4,6 +4,10 @@ Self-contained installers for the 40 Pixaroma workflow packs and the exact model
 files those workflows load. Everything is idempotent: re-running a script never
 re-downloads a file that already exists.
 
+A separate **shorts profile** installs a curated portrait social-media model
+stack and workflow pack for vertical video, photo posts, and stories, with a
+local post-copy generator. See [`SHORTS.md`](SHORTS.md).
+
 ## What is in this folder
 
 | File | Purpose |
@@ -16,8 +20,13 @@ re-downloads a file that already exists.
 | `install-comfyui.sh` | Linux/macOS: official ComfyUI git install |
 | `install-stablediffusion.sh` | Linux/macOS: A1111 or Forge WebUI |
 | `models.psv` | Machine-readable catalog of all 133 model files |
+| `shorts.psv` | Curated catalog for the portrait shorts/photo/story profile |
+| `shorts/workflows/` | Portrait workflow pack copied by `shorts --install` |
+| `shorts_post.py` | Local post-copy generator (templates + optional local Ollama) |
+| `shorts-post.sh` / `shorts-post.ps1` | Thin wrappers for the copy generator |
 | `MODELS.md` | Human-readable model catalog, sizes, shared files, special cases |
 | `WORKFLOWS.md` | Every workflow in every episode pack |
+| `SHORTS.md` | Shorts profile: types, pipelines, licensing, post copy |
 | `AI-SETUP.md` | Recommended plan for the Windows 11 / RTX 3090 / 64 GB machine |
 | `archives/` | The 40 episode zips plus `all-workflows.zip` (52 MB) |
 
@@ -30,6 +39,9 @@ re-downloads a file that already exists.
   would transfer 1.31 TB; sharing saves **525.02 GB**.
 - 3 files are gated behind the FLUX 3 license; 3 more are downloaded by their
   ComfyUI nodes on first use and are intentionally not in the catalog.
+- The optional **shorts profile** is separate: **18 permissively licensed
+  files / 108.67 GB**, plus **4 FastH3 files / 43.63 GB** behind an explicit
+  license gate. It reuses shared files already installed by the episodes.
 
 Sizes are exact byte counts from `hf models list <repo> -R --format json`.
 `models.psv` is the source of truth used by both setup scripts.
@@ -112,6 +124,7 @@ Both `setup.ps1` and `setup.sh` support the same targets and behavior:
 | `models` | Downloads the model files used by the selected episodes |
 | `all` | Both, workflows first |
 | `list` | Prints the catalog; writes nothing |
+| `shorts` | Portrait models; add `--install` for the shorts workflow pack |
 
 ### Selection
 
@@ -133,6 +146,12 @@ Both `setup.ps1` and `setup.sh` support the same targets and behavior:
 | `--force-models` | `-ForceModels` | Re-download files that already exist |
 | `--force-workflows` | `-ForceWorkflows` | Overwrite existing workflow files |
 | `--all-zip` | `-AllZip` | Extract `all-workflows.zip` instead of individual packs |
+| `--short`, `--shorts` | `-Short`, `-Shorts` | Alias for the `shorts` target |
+| `--install` | `-Install` | With `shorts`: also copy the selected workflow pack |
+| `--type T` | `-Type T` | `short` (default), `photo`, `story`, or `all` |
+| `--with-h3` | `-WithH3` | With `shorts`: include the 4 FastH3 files and workflows |
+| `--accept-h3-license` | `-AcceptH3License` | Confirm the MiniMax H3 Community License terms |
+| `--list` | `-List` | With `shorts`, print the shorts catalog and exit; alone, same as the `list` target |
 
 `-DryRun`/`--dry-run` also asks Hugging Face for each selected file with
 `hf download <repo> <path> --dry-run`. The output reports `remote: ok` or
@@ -165,6 +184,56 @@ files are still shown, with a login reminder.
 .\setup.ps1 models -Episode 6,7,8 -DryRun
 .\setup.ps1 models -All -Yes
 .\setup.ps1 models -All -Verify
+```
+
+### Shorts profile
+
+`shorts` is a separate target backed by `shorts.psv` and
+`shorts/workflows/`. It installs portrait social-media models and, with
+`--install` / `-Install`, copies the workflow pack into
+`ComfyUI/user/default/workflows/Pixaroma/Shorts/`.
+
+```sh
+./setup.sh shorts --list
+./setup.sh shorts --type photo --install --yes --comfyui ~/ComfyUI
+./setup.sh shorts --type short --dry-run --comfyui ~/ComfyUI
+./setup.sh --short --install --comfyui ~/ComfyUI
+./setup.sh shorts --type all --with-h3 --accept-h3-license --dry-run
+```
+
+```powershell
+.\setup.ps1 shorts -List
+.\setup.ps1 -Short -Install -Yes
+.\setup.ps1 shorts -Type photo -Install -Yes
+.\setup.ps1 shorts -Type all -WithH3 -AcceptH3License -DryRun
+```
+
+| `--type` | Models | Workflows |
+|---|---|---|
+| `short` (default) | Full core stack, 18 files / 108.67 GB | Short Video, cover image, social sizes |
+| `photo` | Z-Image Turbo + Qwen3-VL helper, 15.59 GB | All Photo Posts workflows |
+| `story` | Z-Image Turbo + Qwen3-VL helper, 15.59 GB | Stories, 9:16 image, social sizes |
+| `all` | Every core row | Every core category |
+
+`--short` / `--shorts` is an alias for the target. `--install` is only valid
+with shorts; without it, models are installed without workflows. FastH3 is
+never included unless you pass `--with-h3 --accept-h3-license`. See
+[`SHORTS.md`](SHORTS.md) for pipelines, VRAM notes, and the post-copy generator.
+
+The seven permissively licensed generative shorts workflows also carry two local
+Qwen3-VL 4B helper nodes: a **prompt enhancer** that rewrites your idea for the
+selected model, and a **post writer** that reads the finished frames and writes
+a caption, hashtags, and alt text. The copy is shown inside the workflow and
+saved to `ComfyUI/output/Shorts/wan5b-post.txt` (one name per workflow) while
+the workflow is open in a browser.
+Both nodes can be bypassed with **Ctrl+B**. See
+[`SHORTS.md`](SHORTS.md#prompt-enhancer-and-post-copy).
+
+Generate captions, alt text, hashtags, and platform versions:
+
+```sh
+./shorts-post.sh --type short --topic "a dog surfing at sunset" \
+  --platform instagram,tiktok,youtube --media output/short.mp4
 ```
 
 ### No re-downloading
@@ -333,5 +402,7 @@ gated FLUX 3 files.
 - `MODELS.md` — every file, exact size, source, episode usage, shared-file
   savings, folder disagreements, renames, and gated/manual cases.
 - `WORKFLOWS.md` — every workflow JSON and the models it loads, per episode.
+- `SHORTS.md` — shorts profile: types, model stack, pipelines, licensing,
+  hardware notes, and the post-copy generator.
 - `AI-SETUP.md` — Windows 11 / RTX 3090 / 64 GB machine plan, drive layout,
   install order, disk budgets, and launch commands.

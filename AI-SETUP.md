@@ -24,7 +24,7 @@ the real drive letters from Disk Management if they differ.
 | `C:\AI\ComfyUI_windows_portable` | Official ComfyUI portable | Fast app/venv access |
 | `C:\AI\ComfyUI-Easy-Install` | Optional Easy-Install flavour | Alternative to the above |
 | `C:\AI\stable-diffusion-webui` | Optional A1111/Forge | Shares the same models |
-| `D:\AI\models` | All 133 model files, ComfyUI folder names | 782.61 GB catalog |
+| `D:\AI\models` | All 133 episode model files plus optional shorts models, ComfyUI folder names | 782.61 GB episode catalog; shorts shares the same folders |
 | `D:\AI\models\.pixaroma-staging` | Temporary download staging (auto-removed) | One large file at a time |
 
 ComfyUI outputs go to the app folder by default. For long video renders, point
@@ -67,8 +67,9 @@ on later runs.
    <https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy>
    Then run `hf auth login`. Without it, the scripts skip those three files and
    exit 1 so you can re-run later.
-5. Keep the scripts, `models.psv`, `archives\`, and the Markdown files together
-   in one folder. The scripts resolve everything relative to that folder.
+5. Keep the scripts, `models.psv`, `shorts.psv`, `archives\`, `shorts\`, and the
+   Markdown files together in one folder. The scripts resolve everything
+   relative to that folder.
 
 ## Step 1 — Install ComfyUI
 
@@ -252,6 +253,48 @@ as `flux2-vae.safetensors` (used by 17 episodes) and
 .\setup.ps1 models -Episode 6 -Verify     # check Ep06 without downloading
 .\setup.ps1 all -Episode 25               # workflows + models for Ep25
 ```
+
+## Optional — shorts profile (portrait video, photo posts, stories)
+
+The shorts profile installs a curated portrait social-media stack and its
+matching workflows. It uses the same `D:\AI\models` store, so files already
+installed by the episode packs are reused.
+
+```powershell
+.\setup.ps1 shorts -List                 # sizes and sources; writes nothing
+.\setup.ps1 shorts -Type short -DryRun   # validate remote paths
+.\setup.ps1 -Short -Install -Yes         # core models + workflow pack
+.\setup.ps1 shorts -Type photo -Install -Yes
+```
+
+- **Core stack:** 18 files / **108.67 GB** (Apache 2.0 or MIT). Shared files
+  such as UMT5, the Wan VAEs, CLIP vision, wav2vec2, and Z-Image are skipped if
+  an episode install already placed them. The Qwen3-VL 4B prompt enhancer
+  (`qwen3vl_4b_fp8_scaled.safetensors`, 5.24 GB) is also used by Ep24–26, so it
+  is usually already present.
+- **Optional FastH3:** 4 files / **43.63 GB**, MiniMax H3 Community License.
+  Use is excluded in the US, EU, UK, and South Korea; enabling it requires
+  `-WithH3 -AcceptH3License`. It needs the 64 GB system RAM for offload.
+- **Disk:** budget about 108 GB beyond the episode models, plus 44 GB for H3.
+  The HDD is fine for the store; first loads of the 12 GB GGUFs are slower than
+  from an SSD. Point ComfyUI output at `D:` — video renders fill the SSD fast.
+- **Workflows:** `C:\AI\ComfyUI_windows_portable\ComfyUI\user\default\workflows\Pixaroma\Shorts\`
+  (Short Video, Photo Posts, Stories, and an H3 folder only with the license
+  gate). Open them from the workflow browser like the episode packs.
+- **Prompt enhancer and post writer:** the seven permissively licensed
+  generative workflows include two local Qwen3-VL 4B Pixaroma nodes that improve
+  the prompt and write the caption, hashtags, and alt text from the finished
+  frames. The copy previews on the node and saves to
+  `ComfyUI\output\Shorts\wan5b-post.txt` (the **Post file name** value plus
+  `.txt`) while the workflow is open in a browser. Press Ctrl+B on either node
+  to bypass it.
+- **Post copy:** `.\shorts-post.ps1 --type short --topic "..."`
+  writes captions, alt text, hashtags, and platform text locally. It uses
+  templates by default and a local Ollama only if you pass `--ollama`.
+
+The 14B GGUF and SCAIL-2 workflows are tight on 24 GB VRAM; keep ComfyUI model
+offloading on and close other GPU apps. See [`SHORTS.md`](SHORTS.md) for the
+pipelines, fps matching, licensing, and troubleshooting.
 
 ## Step 5 — Launch
 

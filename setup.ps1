@@ -9,15 +9,21 @@
   -ForceModels is given. Workflow packs are extracted from .\archives into
   ComfyUI\user\default\workflows\Pixaroma.
 
+  The shorts profile reads shorts.psv instead and can copy the portrait social
+  media workflow pack from .\shorts\workflows into ...\Pixaroma\Shorts.
+
   Paths can be saved once by install-comfyui.ps1 in pixaroma.conf; command-line
   flags override the saved values.
 
 .EXAMPLE
   .\setup.ps1 workflows
-  .\setup.ps1 models --episode 6
-  .\setup.ps1 all --episode 25 --dry-run
-  .\setup.ps1 models --all --yes
-  .\setup.ps1 list --episode 39
+  .\setup.ps1 models -Episode 6
+  .\setup.ps1 all -Episode 25 -DryRun
+  .\setup.ps1 models -All -Yes
+  .\setup.ps1 list -Episode 39
+  .\setup.ps1 shorts -List
+  .\setup.ps1 -Short -Install
+  .\setup.ps1 shorts -Type photo -Install -Yes
 
 .NOTES
   Requires the Hugging Face CLI for downloads: pip install -U "huggingface_hub[cli]"
@@ -25,7 +31,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('workflows', 'models', 'all', 'list')]
+    [ValidateSet('workflows', 'models', 'all', 'list', 'shorts')]
     [string]$Target,
 
     [string[]]$Episode = @(),
@@ -46,18 +52,51 @@ param(
 
     [switch]$ForceWorkflows,
 
-    [switch]$AllZip
+    [switch]$AllZip,
+
+    [Alias('Shorts')]
+    [switch]$Short,
+
+    [switch]$Install,
+
+    [ValidateSet('short', 'photo', 'story', 'all')]
+    [string]$Type = 'short',
+
+    [switch]$WithH3,
+
+    [switch]$AcceptH3License,
+
+    [switch]$List
 )
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $manifest = Join-Path $scriptDir 'models.psv'
+$shortsManifest = Join-Path $scriptDir 'shorts.psv'
 $confPath = Join-Path $scriptDir 'pixaroma.conf'
 $isWindowsHost = ($env:OS -eq 'Windows_NT')
+$script:shortsMode = $false
+$script:shortsList = $false
 
 function Fail([string]$Message) {
     Write-Host "error: $Message" -ForegroundColor Red
     exit 2
+}
+
+function Show-H3LicenseNotice {
+    $lines = @(
+        'MiniMax H3 / FastH3 Community License (summary, not legal advice):',
+        '  - Use is excluded in the United States, the European Union, the United',
+        '    Kingdom, and South Korea.',
+        '  - Companies with more than $20M annual revenue need written permission.',
+        '  - Commercial products must display "MiniMax H3".',
+        '  - Outputs may not be used to train or improve other AI models.',
+        '  - Public content must be disclosed as AI-generated.',
+        '  Full terms: https://huggingface.co/Comfy-Org/MiniMax-H3',
+        'The permissively licensed core (Wan 2.2, SCAIL-2, Z-Image, SeedVR2) does',
+        'not require this gate.'
+    )
+    foreach ($line in $lines) { Write-Host $line -ForegroundColor Yellow }
 }
 
 function Format-Human([int64]$Bytes) {
@@ -98,6 +137,13 @@ function Normalize-Episodes {
 
 function Test-RowSelected {
     param($Row, [string[]]$SelectedEpisodes, [bool]$AllEpisodes)
+    if ($script:shortsMode) {
+        if (-not $Row.types) { return $false }
+        $types = @($Row.types -split ',')
+        if ($types -contains 'h3') { return [bool]$WithH3 }
+        if ($Type -eq 'all') { return $true }
+        return ($types -contains $Type)
+    }
     if ($AllEpisodes) { return $true }
     if (-not $SelectedEpisodes -or $SelectedEpisodes.Count -eq 0) { return $false }
     foreach ($ep in ($Row.episodes -split ',')) {
@@ -150,35 +196,79 @@ function Get-FreeOrThrow {
 }
 
 # ------------------------------------------------------------------ validation
+if ($Target -eq 'shorts') { $Short = $true }
+if ($Short -and -not $Target) { $Target = 'shorts' }
+$shortsList = $false
+if ($List) {
+    if (-not $Target) {
+        if ($Short) { $Target = 'shorts' } else { $Target = 'list' }
+    }
+    switch ($Target) {
+        'shorts' { $Target = 'list'; $shortsList = $true }
+        'list' { if ($Short) { $shortsList = $true } }
+        default { Fail "-List cannot be combined with target $Target" }
+    }
+}
 if (-not $Target) {
-    Write-Host 'Usage: .\setup.ps1 <workflows|models|all|list> [options]'
+    Write-Host 'Usage: .\setup.ps1 <workflows|models|all|list|shorts> [options]'
+    Write-Host 'Shorts: .\setup.ps1 -Short -Install [-Type short|photo|story|all]'
     Write-Host 'Run .\setup.ps1 list to see the model catalog; see README.md for all options.'
     exit 2
 }
-if (-not (Test-Path -LiteralPath $manifest)) { Fail "models.psv not found next to this script" }
+if ($Short -and $Target -notin @('shorts', 'list')) {
+    Fail "-Short is for the shorts profile; it cannot be combined with target $Target"
+}
+if ($Target -eq 'list' -and $Short) { $shortsList = $true }
+if ($Target -eq 'shorts' -or $shortsList) { $script:shortsMode = $true }
+if ($script:shortsMode -or $shortsList) { $manifest = $shortsManifest }
+$script:shortsList = $shortsList
+if (-not (Test-Path -LiteralPath $manifest)) {
+    Fail "$(Split-Path -Leaf $manifest) not found next to this script"
+}
 
 $selectedEpisodes = @(Normalize-Episodes -Values $Episode)
-if ($All -and $selectedEpisodes.Count -gt 0) { Fail 'use -Episode or -All, not both' }
-if ($AllZip -and $selectedEpisodes.Count -gt 0) { Fail '-AllZip extracts the aggregate pack; it cannot be filtered by episode' }
-if ($Target -eq 'models' -and -not $All -and $selectedEpisodes.Count -eq 0) {
-    Fail 'models needs -Episode N (repeatable) or -All'
+$typeBound = $PSBoundParameters.ContainsKey('Type')
+if ($script:shortsMode -or $shortsList) {
+    if ($Episode.Count -gt 0) { Fail '-Episode is for episode packs; use -Type with shorts' }
+    if ($All) { Fail '-All is for episode packs; use -Type all with shorts' }
+    if ($AllZip) { Fail '-AllZip is for the episode workflow packs' }
+    if ($Verify -and $Install) { Fail '-Verify cannot be combined with -Install' }
+    if ($WithH3) {
+        Show-H3LicenseNotice
+        if (-not $AcceptH3License) { Fail '-WithH3 requires -AcceptH3License' }
+    } elseif ($AcceptH3License) {
+        Fail '-AcceptH3License requires -WithH3'
+    }
+} else {
+    if ($All -and $selectedEpisodes.Count -gt 0) { Fail 'use -Episode or -All, not both' }
+    if ($AllZip -and $selectedEpisodes.Count -gt 0) { Fail '-AllZip extracts the aggregate pack; it cannot be filtered by episode' }
+    if ($Target -eq 'models' -and -not $All -and $selectedEpisodes.Count -eq 0) {
+        Fail 'models needs -Episode N (repeatable) or -All'
+    }
+    if ($Target -eq 'all' -and -not $All -and $selectedEpisodes.Count -eq 0) {
+        Fail 'all needs -Episode N (repeatable) or -All'
+    }
+    if ($Install) { Fail '-Install is only valid with the shorts profile' }
+    if ($typeBound) { Fail '-Type is only valid with the shorts profile' }
+    if ($WithH3) { Fail '-WithH3 is only valid with the shorts profile' }
+    if ($AcceptH3License) { Fail '-AcceptH3License is only valid with -WithH3' }
 }
-if ($Target -eq 'all' -and -not $All -and $selectedEpisodes.Count -eq 0) {
-    Fail 'all needs -Episode N (repeatable) or -All'
-}
-if ($Verify -and $Target -ne 'models') {
-    Fail '-Verify is only supported with the models target'
+if ($Verify -and $Target -notin @('models', 'shorts')) {
+    Fail '-Verify is only supported with the models or shorts target'
 }
 if ($Verify -and $ForceModels) {
     Fail '-Verify cannot be combined with -ForceModels'
 }
 
 $rows = @(Import-Csv -LiteralPath $manifest -Delimiter '|')
-if ($rows.Count -eq 0) { Fail 'models.psv is empty' }
-if (-not ($rows[0].PSObject.Properties.Name -contains 'folder')) { Fail 'models.psv has an unexpected header' }
+if ($rows.Count -eq 0) { Fail "$(Split-Path -Leaf $manifest) is empty" }
+if (-not ($rows[0].PSObject.Properties.Name -contains 'folder')) { Fail "$(Split-Path -Leaf $manifest) has an unexpected header" }
+if (($script:shortsMode -or $shortsList) -and -not ($rows[0].PSObject.Properties.Name -contains 'types')) {
+    Fail 'shorts.psv has an unexpected header (missing types)'
+}
 
 # list defaults to everything when no episode filter is given
-$listAll = ($Target -eq 'list' -and -not $All -and $selectedEpisodes.Count -eq 0)
+$listAll = ($Target -eq 'list' -and -not $shortsList -and -not $All -and $selectedEpisodes.Count -eq 0)
 
 # --------------------------------------------------------------------- paths
 $comfy = $null
@@ -188,16 +278,16 @@ if ($Target -ne 'list' -or $ComfyUI) {
         Fail "$ComfyUI does not look like a ComfyUI folder (no models\ inside)"
     }
 }
-if (($Target -eq 'workflows' -or $Target -eq 'all') -and -not $comfy) {
+if (($Target -eq 'workflows' -or $Target -eq 'all' -or ($Target -eq 'shorts' -and $Install)) -and -not $comfy) {
     Fail 'ComfyUI not found. Pass -ComfyUI C:\path\to\ComfyUI'
 }
-if ($Target -eq 'models' -and -not $comfy -and -not $ModelsRoot) {
+if (($Target -eq 'models' -or $Target -eq 'shorts') -and -not $comfy -and -not $ModelsRoot) {
     $saved = Read-PixaromaConf
     if ($saved.ContainsKey('MODELS_ROOT') -and $saved['MODELS_ROOT']) { $ModelsRoot = $saved['MODELS_ROOT'] }
 }
 if (-not $ModelsRoot -and $comfy) { $ModelsRoot = Join-Path $comfy 'models' }
-if ($Target -eq 'models' -and -not $ModelsRoot) {
-    Fail 'models needs -ModelsRoot D:\AI\models (or a ComfyUI install)'
+if (($Target -eq 'models' -or $Target -eq 'shorts') -and -not $ModelsRoot) {
+    Fail "$Target needs -ModelsRoot D:\AI\models (or a ComfyUI install)"
 }
 if ($ModelsRoot) { $ModelsRoot = [IO.Path]::GetFullPath($ModelsRoot) }
 
@@ -310,12 +400,93 @@ function Install-Workflows {
     }
 }
 
+function Test-ShortsWorkflowSelected {
+    param([string]$RelativePath)
+    if ($RelativePath -match '^H3 \(license-restricted\)[\\/]') { return [bool]$WithH3 }
+    if ($RelativePath -match '^Short Video[\\/]') { return ($Type -in @('short', 'all')) }
+    if ($RelativePath -match '^Stories[\\/]') { return ($Type -in @('story', 'all')) }
+    # 9:16 Z-Image cover/first frame is useful to every shorts type.
+    if ($RelativePath -match '^Photo Posts[\\/]3\.') { return $true }
+    # Social Media Sizes uses no models and is useful everywhere.
+    if ($RelativePath -match '^Photo Posts[\\/]4\.') { return $true }
+    if ($RelativePath -match '^Photo Posts[\\/]5\.') { return ($Type -in @('photo', 'all')) }
+    if ($RelativePath -match '^Photo Posts[\\/]') { return ($Type -in @('photo', 'all')) }
+    return $false
+}
+
+function Install-ShortsWorkflows {
+    Write-Host "`n== Shorts workflows ==" -ForegroundColor Cyan
+    $src = Join-Path (Join-Path $scriptDir 'shorts') 'workflows'
+    if (-not (Test-Path -LiteralPath $src)) { Fail 'shorts\workflows not found next to this script' }
+    $dest = Join-Path (Join-Path (Join-Path (Join-Path $comfy 'user') 'default') 'workflows') 'Pixaroma'
+    $dest = Join-Path $dest 'Shorts'
+    if (-not $DryRun) { New-Item -ItemType Directory -Force -Path $dest | Out-Null }
+
+    $srcFull = [IO.Path]::GetFullPath($src)
+    $copied = 0
+    $kept = 0
+    foreach ($file in @(Get-ChildItem -LiteralPath $src -Recurse -File)) {
+        $rel = $file.FullName.Substring($srcFull.Length) -replace '^[\\/]+', ''
+        if (-not (Test-ShortsWorkflowSelected -RelativePath $rel)) { continue }
+        if ($DryRun) {
+            Write-Host "   [dry-run] $rel"
+            continue
+        }
+        $out = Join-Path $dest $rel
+        if ((Test-Path -LiteralPath $out) -and -not $ForceWorkflows) {
+            $kept++
+            continue
+        }
+        $parent = Split-Path -Parent $out
+        if (-not (Test-Path -LiteralPath $parent)) {
+            New-Item -ItemType Directory -Force -Path $parent | Out-Null
+        }
+        Copy-Item -LiteralPath $file.FullName -Destination $out -Force
+        $copied++
+    }
+    if (-not $DryRun) {
+        $total = @(Get-ChildItem -LiteralPath $dest -Recurse -File -ErrorAction SilentlyContinue).Count
+        Write-Host "   $copied copied, $kept kept; $total files in $dest"
+        if ($kept -gt 0 -and -not $ForceWorkflows) {
+            Write-Host '   existing workflow files were kept (use -ForceWorkflows to overwrite)'
+        }
+    }
+}
+
 if ($Target -eq 'workflows' -or $Target -eq 'all') {
     Install-Workflows
+}
+if ($Target -eq 'shorts' -and $Install) {
+    Install-ShortsWorkflows
 }
 if ($Target -eq 'workflows') { exit 0 }
 
 # --------------------------------------------------------------------- listing
+if ($shortsList) {
+    $header = '{0,10}  {1,-68}  {2,-20}  {3}' -f 'SIZE', 'FOLDER/FILE', 'TYPES', 'SOURCE'
+    Write-Host $header
+    [int64]$total = 0
+    $count = 0
+    $h3Count = 0
+    foreach ($row in $rows) {
+        if (-not (Test-RowSelected -Row $row -SelectedEpisodes $selectedEpisodes -AllEpisodes:$false)) { continue }
+        $count++
+        [int64]$bytes = [int64]$row.bytes
+        $total += $bytes
+        if (($row.types -split ',') -contains 'h3') { $h3Count++ }
+        $name = "$($row.folder)/$($row.filename)"
+        Write-Host ('{0,10}  {1,-68}  {2,-20}  {3}' -f (Format-Human $bytes), $name, $row.types, $row.repo)
+    }
+    Write-Host ''
+    Write-Host ("{0} files selected, {1}." -f $count, (Format-Human $total)) -NoNewline
+    if ($h3Count -gt 0) {
+        Write-Host " $h3Count are optional H3 files under the MiniMax H3 Community License."
+    } else {
+        Write-Host ' FastH3 is optional; add -WithH3 -AcceptH3License to include it.'
+    }
+    exit 0
+}
+
 if ($Target -eq 'list') {
     $header = '{0,10}  {1,-68}  {2,-20}  {3}' -f 'SIZE', 'FOLDER/FILE', 'EPISODES', 'SOURCE'
     Write-Host $header
@@ -367,7 +538,11 @@ $gatedRows = @()
 $mismatched = @()
 $missing = @()
 
-Write-Host "`n== Models ==" -ForegroundColor Cyan
+if ($script:shortsMode) {
+    Write-Host "`n== Shorts models ($Type) ==" -ForegroundColor Cyan
+} else {
+    Write-Host "`n== Models ==" -ForegroundColor Cyan
+}
 Write-Host "   folder: $ModelsRoot"
 Get-FreeOrThrow -Path $ModelsRoot
 
@@ -402,7 +577,8 @@ Write-Host ("   selected:    {0} files, {1} downloadable{2}" -f $selected.Count,
 Write-Host ("   present:     {0} files ({1})" -f $presentFiles, (Format-Human $presentBytes))
 Write-Host ("   to download: {0} files ({1})" -f $toFetch, (Format-Human $toFetchBytes))
 if ($mismatched.Count -gt 0) { Write-Host "   size issues: $($mismatched.Count) existing file(s)" -ForegroundColor Yellow }
-if ($gatedRows.Count -gt 0) { Write-Host "   gated:       $($gatedRows.Count) file(s) from black-forest-labs/flux-3-image-klein-comfy" }
+if ($gatedRows.Count -gt 0) { Write-Host "   gated:       $($gatedRows.Count) file(s) require license acceptance + hf auth login" }
+if ($WithH3) { Write-Host '   H3:          included under the MiniMax H3 Community License' }
 
 if ($Verify) {
     Write-Host "`nVerification only; nothing downloaded."
@@ -412,7 +588,7 @@ if ($Verify) {
     exit 1
 }
 
-if ($All -and -not $DryRun -and -not $Yes -and $toFetch -gt 0) {
+if (($All -or $script:shortsMode) -and -not $DryRun -and -not $Yes -and $toFetch -gt 0) {
     Write-Host ''
     Write-Host ("This will download {0}. Continue? [y/N] " -f (Format-Human $toFetchBytes)) -NoNewline
     if ([Console]::IsInputRedirected) {

@@ -1,0 +1,23 @@
+MINIMAX H3 / FASTH3 LICENSE NOTICE
+
+The FastH3 workflows and weights in this folder are optional and are not part
+of the permissive core Shorts stack.
+
+The FastH3 weights inherit the MiniMax H3 Community License. As of the 2026
+license text, use is excluded in:
+
+  - the United States
+  - the European Union
+  - the United Kingdom
+  - South Korea
+
+Other terms include a $20M annual-revenue threshold for commercial use without
+written permission, a requirement to display "MiniMax H3" in commercial
+products, a ban on using the model or its outputs to improve other AI models,
+and AI-generation disclosure requirements for public content.
+
+Read the full license at:
+  https://huggingface.co/Comfy-Org/MiniMax-H3
+
+If those terms do not fit your use, use the core Wan 2.2 / SCAIL-2 / Z-Image
+stack instead. Those models are Apache 2.0 or MIT.
