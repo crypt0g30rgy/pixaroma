@@ -305,6 +305,13 @@ if (-not $DryRun) {
 }
 $work = Join-Path $ParentDir '.pixaroma-easy-setup'
 $archive = Join-Path $work 'ComfyUI-Easy-Install.zip'
+if (-not $DryRun) {
+    # Clear any stale staging BEFORE the download. The cleanup used to run
+    # after Download-File and deleted the archive it had just saved, so the
+    # extraction always failed with "Could not find file ...zip".
+    if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $work | Out-Null
+}
 if ($release) {
     $asset = $release.assets | Where-Object { $_.name -like 'ComfyUI-Easy-Install*.zip' } | Select-Object -First 1
     if (-not $asset) { Fail "latest release ($($release.tag_name)) has no ComfyUI-Easy-Install zip asset" }
@@ -315,8 +322,6 @@ if ($release) {
 }
 
 if (-not $DryRun) {
-    if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force }
-    New-Item -ItemType Directory -Force -Path $work | Out-Null
     Expand-ZipSafe -Zip $archive -Dest $work
     $bat = Join-Path $work 'ComfyUI-Easy-Install.bat'
     $helper = Join-Path $work 'Helper-CEI.zip'
