@@ -5,7 +5,7 @@ model set and a matching workflow pack, then can generate the human post copy
 that goes with the media.
 
 Everything runs on your own machine. The workflows use local open-weight models;
-seven of them include a local Qwen3-VL prompt enhancer and post writer. The
+eight of them include a local Qwen3-VL prompt enhancer and post writer. The
 copy generator uses deterministic templates and, optionally, a local Ollama
 instance. There are no cloud APIs, hosted nodes, or API keys.
 
@@ -73,7 +73,7 @@ overwrite, and `--force-models` / `-ForceModels` to re-download models.
 |---|---|---:|---|
 | Fast prompt or image → video | Wan 2.2 TI2V-5B | 10.00 GB | Apache 2.0 |
 | Quality image → video | Wan 2.2 I2V-A14B, 4-step GGUF hi/lo | 12.01 GB × 2 | Apache 2.0 |
-| Video → video / character motion | SCAIL-2 (Wan 2.1 14B) | 17.69 GB | MIT |
+| Image + motion video → character animation | SCAIL-2 (Wan 2.1 14B) | 17.69 GB | MIT |
 | Image + audio → talking video | InfiniteTalk single | 5.13 GB | Apache 2.0 |
 | Base for InfiniteTalk | Wan 2.1 I2V 14B fp8 | 16.64 GB | Apache 2.0 |
 | Photo posts and covers | Z-Image Turbo AIO | 10.35 GB | Apache 2.0 |
@@ -108,14 +108,22 @@ skipped too.
 Use the 5B workflow for drafts and the 14B workflow for the final take. The 14B
 workflow uses a high-noise and a low-noise 4-step model in sequence.
 
-### 3. Existing video → stylized short
+### 3. Your image + motion video → character animation
 
-1. **Short Video / 3. Video to Video - SCAIL-2 (9x16)**  
-   Load a reference image and a motion/pose video. 512×896, 81-frame chunks,
-   audio kept from the input.
+1. **Short Video / 3b. Character Motion - SCAIL-2 (image + video)**  
+   Load a full-body image of yourself or any character and a video of the motion
+   to copy. 512×896, 81-frame chunks, audio kept from the motion video.
 2. **Short Video / 6. Upscale to 1080p - SeedVR2 (24 fps source)**.
 
-SCAIL-2 transfers performance and identity; it is not a general video editor.
+The character image supplies identity and outfit; the motion video supplies the
+movement — dance, martial arts, gestures, or other full-body actions. SCAIL-2
+does not copy clothes from the video, so first make a character image that
+already shows the target outfit: edit it in an image editor, or generate one
+with the Z-Image photo workflows. Use a single full-body subject on a plain
+background and a full-body clip with a steady camera; 3–10 seconds at 24 fps is
+ideal. Only use images and videos you have the rights to. For general reference
++ motion restyling, use **Short Video / 3. Video to Video - SCAIL-2 (9x16)** —
+same model, different defaults.
 
 ### 4. Portrait + voice → talking short
 
@@ -150,7 +158,7 @@ notice in that folder first.
 
 ## Prompt enhancer and post copy
 
-Seven of the permissively licensed generative workflows ship with a small local
+Eight of the permissively licensed generative workflows ship with a small local
 helper cluster built from Pixaroma nodes. They use **Qwen3-VL 4B fp8**
 (`qwen3vl_4b_fp8_scaled.safetensors`, 5.24 GB) from
 `ComfyUI/models/text_encoders`, the same local file the Krea 2 episode workflows
@@ -161,6 +169,7 @@ use. Nothing is sent to a cloud service.
 | Short Video / 1. Wan 2.2 5B | idea + first frame (when the image path is enabled) | final video frames | `wan5b-post` |
 | Short Video / 2. Wan 2.2 14B | idea + input image | final video frames | `wan14b-post` |
 | Short Video / 3. SCAIL-2 | idea + reference image | final video frames | `scail-post` |
+| Short Video / 3b. Character Motion | idea + character image | final video frames | `character-motion-post` |
 | Short Video / 4. InfiniteTalk | idea + portrait image | final video frames | `talking-post` |
 | Photo Posts / 1. Z-Image 4x5 | idea | finished image | `photo-4x5-post` |
 | Photo Posts / 2. Square 1x1 | idea | finished image | `photo-1x1-post` |

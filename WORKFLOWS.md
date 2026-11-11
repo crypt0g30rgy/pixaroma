@@ -2,7 +2,7 @@
 
 The 40 episode packs in `archives/`, with every workflow and the model files it loads. Workflow paths are relative to the pack root after unzipping. Model names are filenames; folders and sizes are in [MODELS.md](MODELS.md).
 
-> The curated portrait workflow pack is separate: `shorts/workflows/` (16 workflows in four categories), copied by `./setup.sh --short --install`. Seven of its permissively licensed generative workflows also carry local Qwen3-VL 4B prompt enhancer and post writer nodes. See [`SHORTS.md`](SHORTS.md). This document covers only the episode packs.
+> The curated portrait workflow pack is separate: `shorts/workflows/` (17 workflows in four categories), copied by `./setup.sh --short --install`. Eight of its permissively licensed generative workflows also carry local Qwen3-VL 4B prompt enhancer and post writer nodes. See [`SHORTS.md`](SHORTS.md). This document covers only the episode packs.
 
 ## Summary
 

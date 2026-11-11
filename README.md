@@ -220,7 +220,7 @@ with shorts; without it, models are installed without workflows. FastH3 is
 never included unless you pass `--with-h3 --accept-h3-license`. See
 [`SHORTS.md`](SHORTS.md) for pipelines, VRAM notes, and the post-copy generator.
 
-The seven permissively licensed generative shorts workflows also carry two local
+The eight permissively licensed generative shorts workflows also carry two local
 Qwen3-VL 4B helper nodes: a **prompt enhancer** that rewrites your idea for the
 selected model, and a **post writer** that reads the finished frames and writes
 a caption, hashtags, and alt text. The copy is shown inside the workflow and

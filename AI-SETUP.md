@@ -281,13 +281,18 @@ installed by the episode packs are reused.
 - **Workflows:** `C:\AI\ComfyUI_windows_portable\ComfyUI\user\default\workflows\Pixaroma\Shorts\`
   (Short Video, Photo Posts, Stories, and an H3 folder only with the license
   gate). Open them from the workflow browser like the episode packs.
-- **Prompt enhancer and post writer:** the seven permissively licensed
+- **Prompt enhancer and post writer:** the eight permissively licensed
   generative workflows include two local Qwen3-VL 4B Pixaroma nodes that improve
   the prompt and write the caption, hashtags, and alt text from the finished
   frames. The copy previews on the node and saves to
   `ComfyUI\output\Shorts\wan5b-post.txt` (the **Post file name** value plus
   `.txt`) while the workflow is open in a browser. Press Ctrl+B on either node
   to bypass it.
+- **Character motion:** Short Video / 3b. Character Motion - SCAIL-2 takes a
+  full-body image of yourself or any character and a video of the motion to
+  copy, and outputs that character performing it. Dance, martial arts, gestures,
+  and other full-body actions work. It reuses the SCAIL-2 models already in the
+  core stack, so it adds no downloads.
 - **Post copy:** `.\shorts-post.ps1 --type short --topic "..."`
   writes captions, alt text, hashtags, and platform text locally. It uses
   templates by default and a local Ollama only if you pass `--ollama`.
