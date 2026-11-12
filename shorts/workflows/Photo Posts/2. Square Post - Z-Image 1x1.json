@@ -354,7 +354,7 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\checkpoints\\z-image\\z-image-turbo-fp8-aio.safetensors"
+        "z-image\\z-image-turbo-fp8-aio.safetensors"
       ]
     },
     {

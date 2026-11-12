@@ -42,7 +42,7 @@
         ]
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\text_encoders\\umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
         "wan",
         "default"
       ]
@@ -86,7 +86,7 @@
         ]
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\vae\\wan_2.1_vae.safetensors"
+        "wan_2.1_vae.safetensors"
       ]
     },
     {
@@ -694,7 +694,7 @@
         "aux_id": "city96/ComfyUI-GGUF"
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\diffusion_models\\wan2.2\\wan2.2_i2v_A14b_high_noise_lightx2v_4step-Q6_K.gguf"
+        "wan2.2\\wan2.2_i2v_A14b_high_noise_lightx2v_4step-Q6_K.gguf"
       ]
     },
     {
@@ -729,7 +729,7 @@
         "aux_id": "city96/ComfyUI-GGUF"
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\diffusion_models\\wan2.2\\wan2.2_i2v_A14b_low_noise_lightx2v_4step-Q6_K.gguf"
+        "wan2.2\\wan2.2_i2v_A14b_low_noise_lightx2v_4step-Q6_K.gguf"
       ]
     },
     {

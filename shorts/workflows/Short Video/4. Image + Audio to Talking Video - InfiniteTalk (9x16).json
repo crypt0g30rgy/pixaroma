@@ -95,7 +95,7 @@
         "secondTabWidth": 65
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\diffusion_models\\wan2.1\\Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ.safetensors",
+        "wan2.1\\Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ.safetensors",
         "default"
       ]
     },
@@ -150,7 +150,7 @@
         "secondTabWidth": 65
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\loras\\wan2.2\\lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+        "wan2.2\\lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
         1
       ],
       "color": "#223",
@@ -201,7 +201,7 @@
         "secondTabWidth": 65
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\model_patches\\wan2.1_infiniteTalk_single_fp16.safetensors"
+        "wan2.1_infiniteTalk_single_fp16.safetensors"
       ]
     },
     {
@@ -248,7 +248,7 @@
         "secondTabWidth": 65
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\audio_encoders\\wav2vec2-chinese-base_fp16.safetensors"
+        "wav2vec2-chinese-base_fp16.safetensors"
       ]
     },
     {
@@ -295,7 +295,7 @@
         "secondTabWidth": 65
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\text_encoders\\umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
         "wan",
         "default"
       ]
@@ -347,7 +347,7 @@
         "secondTabWidth": 65
       },
       "widgets_values": [
-        "E:\\gen-ai\\models\\vae\\Wan2_1_VAE_bf16.safetensors"
+        "Wan2_1_VAE_bf16.safetensors"
       ]
     },
     {
