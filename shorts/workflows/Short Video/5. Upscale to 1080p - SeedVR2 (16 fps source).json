@@ -41,7 +41,7 @@
         "Node name for S&R": "SeedVR2LoadVAEModel"
       },
       "widgets_values": [
-        "ema_vae_fp16.safetensors",
+        "E:\\gen-ai\\models\\SEEDVR2\\ema_vae_fp16.safetensors",
         "cuda:0",
         true,
         1024,
@@ -91,7 +91,7 @@
         "Node name for S&R": "SeedVR2LoadDiTModel"
       },
       "widgets_values": [
-        "seedvr2_ema_3b_fp16.safetensors",
+        "E:\\gen-ai\\models\\SEEDVR2\\seedvr2_ema_3b_fp16.safetensors",
         "cuda:0",
         0,
         false,
