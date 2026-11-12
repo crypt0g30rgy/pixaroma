@@ -227,6 +227,9 @@ How it behaves:
   downloads nothing and exits 1 if anything is absent or the wrong size.
 - `-ForceModels` re-downloads files that already exist. It cannot be combined
   with `-Verify`.
+- Downloads are ordered smallest first by default. `-SortSize desc` starts
+  with the largest instead. The byte counts in `models.psv` set the order, and
+  a file that is already installed is always skipped.
 
 ### Install by episode
 

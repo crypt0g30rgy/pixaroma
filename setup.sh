@@ -33,6 +33,8 @@ YES=0
 VERIFY=0
 FORCE_MODELS=0
 FORCE_WORKFLOWS=0
+SORT_SIZE=""
+SORT_SIZE_SET=0
 ALL_ZIP=0
 INSTALL=0
 LIST_ONLY=0
@@ -78,6 +80,10 @@ Targets:
 Selection:
   --episode N      Episode number, e.g. 6, 06, Ep06. Repeatable or comma-separated.
   --all            All episodes. Required for `models` when --episode is omitted.
+  --sort-size asc|desc
+                   Download order by file size. Default is asc (smallest
+                   first); use desc for largest first. Applies to models,
+                   shorts, and all.
 
 Shorts:
   --short, --shorts  Shorthand for the `shorts` target.
@@ -234,6 +240,17 @@ while [ $# -gt 0 ]; do
             FORCE_MODELS=1
             shift
             ;;
+        --sort-size)
+            [ $# -ge 2 ] || die "--sort-size needs a value (asc or desc)"
+            SORT_SIZE=$2
+            SORT_SIZE_SET=1
+            shift 2
+            ;;
+        --sort-size=*)
+            SORT_SIZE=${1#*=}
+            SORT_SIZE_SET=1
+            shift
+            ;;
         --force-workflows)
             FORCE_WORKFLOWS=1
             shift
@@ -279,6 +296,17 @@ if [ "$TARGET" = "shorts" ] || [ "$SHORTS_LIST" = 1 ]; then
     MANIFEST="$SHORTS_MANIFEST"
 fi
 [ -f "$MANIFEST" ] || die "$(basename -- "$MANIFEST") not found next to this script"
+
+if [ "$SORT_SIZE_SET" = 1 ]; then
+    case "$SORT_SIZE" in
+        asc|desc) ;;
+        *) die "invalid --sort-size: $SORT_SIZE (use asc or desc)" ;;
+    esac
+    case "$TARGET" in
+        models|shorts|all) ;;
+        *) die "--sort-size only applies to model downloads" ;;
+    esac
+fi
 
 if [ "$TARGET" = "shorts" ] || [ "$SHORTS_LIST" = 1 ]; then
     case "$SHORTS_TYPE" in
@@ -635,6 +663,25 @@ if [ "$VERIFY" != 1 ]; then
     command -v hf >/dev/null 2>&1 || die "the 'hf' CLI is not installed (pip install -U \"huggingface_hub[cli]\")"
 fi
 
+# Downloads are ordered by the exact manifest byte count, smallest first by
+# default. Pre-filter the selected rows into a temporary file so the scan,
+# dry-run, and download passes all agree on the order.
+[ -n "$SORT_SIZE" ] || SORT_SIZE="asc"
+SORTED_ROWS=$(mktemp "${TMPDIR:-/tmp}/pixaroma-rows.XXXXXX") || die "mktemp failed"
+trap 'rm -f "$SORTED_ROWS"' 0
+if [ "$SORT_SIZE" = "desc" ]; then
+    sort_key="-k3,3nr"
+else
+    sort_key="-k3,3n"
+fi
+while IFS='|' read -r folder filename bytes repo repo_path eps url gated note; do
+    [ "$folder" = "folder" ] && continue
+    row_selected "$eps" || continue
+    printf '%s|%s|%s|%s|%s|%s|%s|%s|%s\n' \
+        "$folder" "$filename" "$bytes" "$repo" "$repo_path" "$eps" "$url" "$gated" "$note"
+done < "$MANIFEST" | sort -t'|' "$sort_key" > "$SORTED_ROWS"
+ROWS_SOURCE="$SORTED_ROWS"
+
 selected_files=0
 selected_bytes=0
 manual_count=0
@@ -679,7 +726,7 @@ while IFS='|' read -r folder filename bytes repo repo_path eps url gated note; d
             printf '[missing] %s/%s\n' "$folder" "$filename"
         fi
     fi
-done < "$MANIFEST"
+done < "$ROWS_SOURCE"
 
 if [ "$selected_files" -eq 0 ]; then
     printf 'No model files are referenced by the selected episode(s).\n'
@@ -805,7 +852,7 @@ while IFS='|' read -r folder filename bytes repo repo_path eps url gated note; d
     rm -rf "$stage"
     downloaded_files=$((downloaded_files + 1))
     downloaded_bytes=$((downloaded_bytes + bytes))
-done < "$MANIFEST"
+done < "$ROWS_SOURCE"
 
 # Remove the staging root only when every download moved out cleanly.
 rmdir "$STAGE_ROOT" 2>/dev/null || true
@@ -822,7 +869,7 @@ if [ "$manual_count" -gt 0 ]; then
         [ "$repo" = "-" ] || continue
         row_selected "$eps" || continue
         printf '  %s/%s\n    %s\n' "$folder" "$filename" "$note"
-    done < "$MANIFEST"
+    done < "$ROWS_SOURCE"
 fi
 
 if [ "$failed_files" -gt 0 ] || [ "$gate_skipped" -gt 0 ]; then

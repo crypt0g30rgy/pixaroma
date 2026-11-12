@@ -20,6 +20,7 @@
   .\setup.ps1 models -Episode 6
   .\setup.ps1 all -Episode 25 -DryRun
   .\setup.ps1 models -All -Yes
+  .\setup.ps1 models -All -SortSize desc
   .\setup.ps1 list -Episode 39
   .\setup.ps1 shorts -List
   .\setup.ps1 -Short -Install
@@ -49,6 +50,9 @@ param(
     [switch]$Verify,
 
     [switch]$ForceModels,
+
+    [ValidateSet('asc', 'desc')]
+    [string]$SortSize,
 
     [switch]$ForceWorkflows,
 
@@ -258,6 +262,9 @@ if ($Verify -and $Target -notin @('models', 'shorts')) {
 }
 if ($Verify -and $ForceModels) {
     Fail '-Verify cannot be combined with -ForceModels'
+}
+if ($SortSize -and $Target -notin @('models', 'shorts', 'all')) {
+    Fail '-SortSize only applies to model downloads'
 }
 
 $rows = @(Import-Csv -LiteralPath $manifest -Delimiter '|')
@@ -521,6 +528,12 @@ if (-not $DryRun -and -not $Verify -and -not (Get-Command hf -ErrorAction Silent
 }
 
 $selected = @($rows | Where-Object { Test-RowSelected -Row $_ -SelectedEpisodes $selectedEpisodes -AllEpisodes:$All })
+if (-not $SortSize) { $SortSize = 'asc' }
+if ($SortSize -eq 'asc') {
+    $selected = @($selected | Sort-Object { [int64]$_.bytes })
+} elseif ($SortSize -eq 'desc') {
+    $selected = @($selected | Sort-Object { [int64]$_.bytes } -Descending)
+}
 if ($selected.Count -eq 0) {
     Write-Host 'No model files are referenced by the selected episode(s).'
     exit 0

@@ -144,6 +144,7 @@ Both `setup.ps1` and `setup.sh` support the same targets and behavior:
 | `--yes` | `-Yes` | Skip the full-install confirmation prompt |
 | `--verify` | `-Verify` | Check installed sizes; download nothing; exit 1 on problems |
 | `--force-models` | `-ForceModels` | Re-download files that already exist |
+| `--sort-size asc\|desc` | `-SortSize asc\|desc` | Download order by size; default `asc` (smallest first), `desc` largest first |
 | `--force-workflows` | `-ForceWorkflows` | Overwrite existing workflow files |
 | `--all-zip` | `-AllZip` | Extract `all-workflows.zip` instead of individual packs |
 | `--short`, `--shorts` | `-Short`, `-Shorts` | Alias for the `shorts` target |
@@ -172,6 +173,7 @@ files are still shown, with a login reminder.
 ./setup.sh workflows --comfyui ~/ComfyUI
 ./setup.sh models --episode 6 --comfyui ~/ComfyUI
 ./setup.sh models --episode 6,7,8 --dry-run
+./setup.sh models --episode 6 --sort-size desc --comfyui ~/ComfyUI
 ./setup.sh models --all --yes --comfyui ~/ComfyUI
 ./setup.sh models --all --verify
 ```
@@ -182,6 +184,7 @@ files are still shown, with a login reminder.
 .\setup.ps1 workflows -ComfyUI C:\AI\ComfyUI_windows_portable\ComfyUI
 .\setup.ps1 models -Episode 6 -ComfyUI C:\AI\ComfyUI_windows_portable\ComfyUI
 .\setup.ps1 models -Episode 6,7,8 -DryRun
+.\setup.ps1 models -Episode 6 -SortSize desc
 .\setup.ps1 models -All -Yes
 .\setup.ps1 models -All -Verify
 ```
